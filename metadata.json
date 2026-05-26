@@ -1,0 +1,6 @@
+{
+  "name": "NKT Group Portal",
+  "description": "Premium full-stack web application featuring a showcase of George S. Thomas's physical holdings (EV Charge Hub, Real Estate, legacy N.K.T. Vessels House) and an integrated AI Admin Command Center.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -551,6 +551,14 @@ app.post("/api/admin/login", (req, res) => {
 
 // Mount Vite middleware for development or serve built bundle
 const startServer = async () => {
+  // If we're deploying onto Vercel, we export the Express app to Vercel's serverless handler.
+  // We do not want to boot up app.listen() or mount static assets search paths,
+  // as Vercel routes Edge assets and handles the serverless execution pipeline itself.
+  if (process.env.VERCEL) {
+    console.log("[NKT Core Engine] Vercel environment detected. Skipping local listener bind.");
+    return;
+  }
+
   if (process.env.NODE_ENV !== "production") {
     console.log("Starting server in development mode with Vite middleware mode");
     const vite = await createViteServer({
@@ -573,3 +581,5 @@ const startServer = async () => {
 };
 
 startServer();
+
+export default app;

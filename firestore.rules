@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Global Helpers
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+    function isVerifiedUser() { 
+      return isSignedIn() && request.auth.token.email_verified == true; 
+    }
+
+    // 1. Leads Collection Security
+    match /leads/{leadId} {
+      allow get, list: if isVerifiedUser();
+      
+      // Anyone can submit a contact lead (Public Create)
+      allow create: if isValidId(leadId) 
+        && request.resource.data.keys().hasAll(['id', 'name', 'email', 'message', 'status', 'timestamp'])
+        && request.resource.data.keys().size() == 6
+        && request.resource.data.id is string
+        && request.resource.data.name is string && request.resource.data.name.size() <= 128
+        && request.resource.data.email is string && request.resource.data.email.size() <= 128
+        && request.resource.data.message is string && request.resource.data.message.size() <= 5000
+        && request.resource.data.status == 'New'
+        && request.resource.data.timestamp is string;
+
+      // Only authenticated and verified operators can update status or delete
+      allow update: if isVerifiedUser() 
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.name == resource.data.name
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.message == resource.data.message
+        && request.resource.data.timestamp == resource.data.timestamp
+        && request.resource.data.status in ['New', 'Reviewed', 'Archived'];
+
+      allow delete: if isVerifiedUser();
+    }
+
+    // 2. Properties Collection Security
+    match /properties/{propertyId} {
+      // Properties/Assets showcase is public
+      allow read: if true;
+
+      // Only authenticated operators can manage property CRM records or log maintenance logs
+      allow create, delete: if isVerifiedUser();
+
+      allow update: if isVerifiedUser()
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.name is string
+        && request.resource.data.location is string
+        && request.resource.data.monthlyRent is string;
+    }
+
+    // 3. Agentic Logs Collection Security
+    match /agentic_logs/{logId} {
+      allow read: if true; // Public logs view on terminal or console dashboard
+      allow create: if true; // Public submission by system action triggers
+      allow update, delete: if isVerifiedUser();
+    }
+
+    // 4. Client-side synced Keep Notes Collection Security
+    match /keep_notes/{noteId} {
+      allow read: if true;
+      allow create, update, delete: if isSignedIn();
+    }
+  }
+}

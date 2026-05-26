@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "Lead": {
+      "title": "Lead",
+      "description": "Client inquiries submitted via the contact form",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the lead record" },
+        "name": { "type": "string", "description": "Full name of the inquirer" },
+        "email": { "type": "string", "format": "email", "description": "Email address of the inquirer" },
+        "message": { "type": "string", "description": "The custom message or query submitted by the client" },
+        "status": { "type": "string", "enum": ["New", "Reviewed", "Archived"], "description": "Inbox classification status" },
+        "timestamp": { "type": "string", "description": "ISO datetime string when submitted" }
+      },
+      "required": ["id", "name", "email", "message", "status", "timestamp"]
+    },
+    "Property": {
+      "title": "Property",
+      "description": "Leased units and assets within Nedumpurath Towers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique property id" },
+        "name": { "type": "string", "description": "Asset name" },
+        "location": { "type": "string", "description": "Detailed floor/location reference" },
+        "type": { "type": "string", "description": "Broad business or zoning tag" },
+        "tenant": { "type": "string", "description": "Active tenant establishment" },
+        "areaSqFt": { "type": "number", "description": "Physical floor area" },
+        "monthlyRent": { "type": "string", "description": "Lease monthly pricing" },
+        "occupancyStatus": { "type": "string", "enum": ["Occupied", "Vacant"], "description": "Active occupancy indicator" },
+        "leaseExpiry": { "type": "string", "description": "Filing expiration date string" },
+        "maintenanceLogs": { "type": "array", "description": "Inspection report list items" }
+      },
+      "required": ["id", "name", "location", "type", "tenant", "areaSqFt", "monthlyRent", "occupancyStatus", "leaseExpiry", "maintenanceLogs"]
+    },
+    "AgenticLog": {
+      "title": "AgenticLog",
+      "description": "Infrastructure automation status logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Log identification key" },
+        "time": { "type": "string", "description": "Relative time timestamp" },
+        "category": { "type": "string", "description": "Classification tags" },
+        "text": { "type": "string", "description": "Status event report body" }
+      },
+      "required": ["id", "time", "category", "text"]
+    }
+  },
+  "firestore": {
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Contains system tracking records for customer leads"
+    },
+    "/properties/{propertyId}": {
+      "schema": "Property",
+      "description": "Leasing ledger registry"
+    },
+    "/agentic_logs/{logId}": {
+      "schema": "AgenticLog",
+      "description": "Operations log archive"
+    }
+  }
+}

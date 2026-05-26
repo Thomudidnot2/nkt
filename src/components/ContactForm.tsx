@@ -1,6 +1,8 @@
 import { useState, FormEvent } from "react";
 import { motion } from "motion/react";
 import { Send, CheckCircle2, AlertCircle, Linkedin, Mail, MapPin, Youtube, ExternalLink } from "lucide-react";
+import { db, handleFirestoreError, OperationType } from "../utils/workspaceAuth";
+import { setDoc, doc } from "firebase/firestore";
 
 export default function ContactForm() {
   const [name, setName] = useState("");
@@ -21,6 +23,7 @@ export default function ContactForm() {
     setIsSubmitting(true);
 
     try {
+      // 1. Send to server file-based DB
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -28,6 +31,22 @@ export default function ContactForm() {
       });
 
       if (res.ok) {
+        // 2. Synchronize to Firestore
+        const leadId = "lead-" + Date.now();
+        try {
+          await setDoc(doc(db, "leads", leadId), {
+            id: leadId,
+            name,
+            email,
+            message,
+            status: "New",
+            timestamp: new Date().toISOString()
+          });
+        } catch (firebaseErr) {
+          console.error("Failed to mirror lead to Firestore instance:", firebaseErr);
+          handleFirestoreError(firebaseErr, OperationType.WRITE, `leads/${leadId}`);
+        }
+
         setIsSuccess(true);
         setName("");
         setEmail("");

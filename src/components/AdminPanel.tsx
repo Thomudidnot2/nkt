@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { EvTelemetry, Property, Lead, AgenticLog } from "../types";
 import WorkspaceHub from "./WorkspaceHub";
+import { db } from "../utils/workspaceAuth";
+import { doc, getDocFromServer } from "firebase/firestore";
 
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -44,6 +46,31 @@ export default function AdminPanel() {
   const [predictiveTickets, setPredictiveTickets] = useState<any[]>([]);
   const [newLogTexts, setNewLogTexts] = useState<{ [key: string]: string }>({});
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+
+  const [firebaseConnected, setFirebaseConnected] = useState<boolean | null>(null);
+
+  // Connection Test as required by Firestore directives
+  useEffect(() => {
+    let active = true;
+    const testConnection = async () => {
+      try {
+        await getDocFromServer(doc(db, "test", "connection"));
+        if (active) setFirebaseConnected(true);
+      } catch (error: any) {
+        if (error instanceof Error && error.message.includes("offline")) {
+          console.error("Firebase is offline. Check credentials.");
+          if (active) setFirebaseConnected(false);
+        } else {
+          // Handshake succeeded even if doc is absent
+          if (active) setFirebaseConnected(true);
+        }
+      }
+    };
+    testConnection();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Auto-select first asset
   useEffect(() => {
@@ -421,7 +448,21 @@ export default function AdminPanel() {
         {/* TAB 1: Global Operations Overview */}
         {activeTab === "overview" && (
           <div className="space-y-6">
-            <h3 className="text-xl font-bold text-white font-sans">Global Operations Overview</h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white font-sans">Global Operations Overview</h3>
+                <p className="text-[10px] text-slate-500 font-sans mt-0.5">Physical telemetry and lease tracking at Nedumpurath Towers</p>
+              </div>
+              
+              {/* Firestore Connection Badge */}
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 shrink-0 font-sans text-xs">
+                <span id="firestore-indicator-dot" className={`w-2 h-2 rounded-full ${firebaseConnected === true ? "bg-emerald-400 animate-pulse" : firebaseConnected === false ? "bg-red-450" : "bg-yellow-400"}`} />
+                <span className="text-slate-450 text-slate-400">Firebase Database:</span>
+                <span id="firestore-indicator-text" className={`font-semibold ${firebaseConnected === true ? "text-emerald-400" : firebaseConnected === false ? "text-red-450" : "text-yellow-400"}`}>
+                  {firebaseConnected === true ? "Synchronized" : firebaseConnected === false ? "Disconnected" : "Handshake active..."}
+                </span>
+              </div>
+            </div>
             
             {/* KPI Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
